@@ -112,7 +112,7 @@ missClass = function(values, predicted) {
 OOS_errRate = missClass(train2$classe, predictions)
 OOS_errRate
 
-## [1] 0.001911802  The out-of-sample error rate is 0.19%.###################
+## [1] 0.002294163  The out-of-sample error rate is 0.22%.###################
 
 ###############  predict the classification of the 20 observations of the testing data set ###############
 
