@@ -2,7 +2,7 @@
 
 # first download the data from the links referenced and then upload the data files into R ###
 
-setwd("D:/Lida/Ellena form/Machine learning/exam")
+setwd("D:/Lid/Machine learning/exam")
 training <- read.csv("pml-training.csv", na.strings = c("NA", "#DIV/0!", ""))
 testing  <- read.csv("pml-testing.csv",  na.strings = c("NA", "#DIV/0!", ""))
 table(training$classe) 
