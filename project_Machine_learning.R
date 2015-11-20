@@ -1,10 +1,13 @@
-# machine-learning-project
+# machine-learning-Final project
+
 
 # first download the data from the links referenced and then upload the data files into R ###
 
 setwd("D:/Lid/Machine learning/exam")
 training <- read.csv("pml-training.csv", na.strings = c("NA", "#DIV/0!", ""))
 testing  <- read.csv("pml-testing.csv",  na.strings = c("NA", "#DIV/0!", ""))
+dim(training); dim(testing)
+summary(training) ; str(training)
 table(training$classe) 
 ###take a look at the data and particularly at classe which is the variable we need to predict
 prop.table(table(training$user_name, training$classe), 1)
@@ -18,6 +21,7 @@ testing  <- testing[, 7:160]
 is_data  <- apply(!is.na(training), 2, sum) > 19621  
 training <- training[, is_data]
 testing  <- testing[, is_data]
+dim(training); dim(testing)
 
 ## training purposes (actual model building), while the 40% remainder will be used only for testing, evaluation and accuracy measurement##
 install.packages("caret")
@@ -26,21 +30,24 @@ library(caret)
 ## Loading required package: lattice, Loading required package: ggplot2
 library(lattice)
 library(ggplot2)
+
 set.seed(3141592)
+###train1 is the training data set (it contains 11776 observations, or about 60% of the entire training data set),
+####and test1 is the testing data set (it contains 7846 observations about 40% of the entire training data set)###
+
 inTrain <- createDataPartition(y=training$classe, p=0.60, list=FALSE)
 train1  <- training[inTrain,]
-train2  <- training[-inTrain,]
-dim(train1); dim(train2)
+test1  <- training[-inTrain,]
+dim(train1); dim(test1)
 
-###train1 is the training data set (it contains 11776 observations, or about 60% of the entire training data set), and train2 is the testing data set (it contains 7846 observations about 40% of the entire training data set)###
 
 ## identify the "zero covariates" from train1 and then remove these "zero covariates" from both train1 and train2##
 nzv_cols <- nearZeroVar(train1)
 if(length(nzv_cols) > 0) {
   train1 <- train1[, -nzv_cols]
-  train2 <- train2[, -nzv_cols]
+  test1 <- test1[, -nzv_cols]
 }
-dim(train1); dim(train2)
+dim(train1); dim(test1)
 
 ##############fitting the model################
 
@@ -49,6 +56,7 @@ install.packages("randomForest")
 library(randomForest)
 
 set.seed(3141592)
+
 fitModel <- randomForest(classe~., data=train1, importance=TRUE, ntree=100)
 varImpPlot(fitModel)
 
@@ -92,13 +100,14 @@ fitModel <- train(classe~roll_belt+num_window+pitch_belt+magnet_dumbbell_y+magne
                   prox=TRUE,
                   verbose=TRUE,
                   allowParallel=TRUE)
+fitModel
 saveRDS(fitModel, "modelRF.Rds")
 fitModel <- readRDS("modelRF.Rds")
 
 ## the accuracy of this model##############
 
-predictions <- predict(fitModel, newdata=train2)
-confusionMat <- confusionMatrix(predictions, train2$classe)
+predictions <- predict(fitModel, newdata=test1)
+confusionMat <- confusionMatrix(predictions, test1$classe)
 confusionMat
 ######### 99.77% is the number of accuracy which totally validates the hypothesis made to eliminate most variables and use only 9 relatively independent covariates.##########
 
@@ -109,7 +118,7 @@ confusionMat
 missClass = function(values, predicted) {
   sum(predicted != values) / length(values)
 }
-OOS_errRate = missClass(train2$classe, predictions)
+OOS_errRate = missClass(test1$classe, predictions)
 OOS_errRate
 
 ## [1] 0.002294163  The out-of-sample error rate is 0.22%.###################
