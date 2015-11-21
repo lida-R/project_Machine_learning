@@ -61,13 +61,18 @@ fitModel <- randomForest(classe~., data=train1, importance=TRUE, ntree=100)
 varImpPlot(fitModel)
 
 
-##### Using the Accuracy and Gini graphs above, I selected the top 10 variables that I'll use for model building. If the accuracy of the resulting model is acceptable, limiting the number of variables is a good idea to ensure readability and interpretability of the model. A model with 10 parameters is certainly much more user friendly than a model with 53 parameters.################
+##### Using the Accuracy and Gini graphs above, I selected the top 10 variables that I'll use for model building.
+##If the accuracy of the resulting model is acceptable, limiting the number of variables is a good idea to ensure readability and interpretability of the model.
+##A model with 10 parameters is certainly much more user friendly than a model with 53 parameters.################
 
-corr = cor(train1[,c("yaw_belt","roll_belt","num_window","pitch_belt","magnet_dumbbell_z","magnet_dumbbell_y","pitch_forearm","accel_dumbbell_y","roll_arm","roll_forearm")])
-diag(corr) <- 0
-which(abs(corr)>0.75, arr.ind=TRUE)
+### By calculation the correlation matrix for these 10 variables and replace the 1s in the diagonal with 0s, and outputs which variables have an absolute value correlation above 75% ,
+## we may have problem with roll_belt and yaw_belt which have a high correlation (above 75%) with each other ###
 
-### By calculation the correlation matrix for these 10 variables and replace the 1s in the diagonal with 0s, and outputs which variables have an absolute value correlation above 75% , we may have problem with roll_belt and yaw_belt which have a high correlation (above 75%) with each other ###
+cor_mat = cor(train1[,c("yaw_belt","roll_belt","num_window","pitch_belt","magnet_dumbbell_z","magnet_dumbbell_y","pitch_forearm","accel_dumbbell_y","roll_arm","roll_forearm")])
+diag(cor_mat) <- 0
+which(abs(cor_mat)>0.75, arr.ind=TRUE)
+
+
 
 cor(train1$roll_belt, train1$yaw_belt)
 
@@ -77,7 +82,8 @@ cor(train1$roll_belt, train1$yaw_belt)
 
 qplot(roll_belt, magnet_dumbbell_y, colour=classe, data=train1)
 
-### This graph suggests that we could probably categorize the data into groups based on roll_belt values and a quick tree classifier selects roll_belt as the first discriminant among all 53 covariates (which explains why we have eliminated yaw_belt instead of roll_belt, and not the opposite: it is a "more important" covariate)####
+### This graph suggests that we could probably categorize the data into groups based on roll_belt values and a quick tree classifier selects roll_belt as the first discriminant among all 53 covariates
+##(which explains why we have eliminated yaw_belt instead of roll_belt, and not the opposite: it is a "more important" covariate)####
 
 install.packages("rpart.plot")
 
@@ -109,6 +115,7 @@ fitModel <- readRDS("modelRF.Rds")
 predictions_RF <- predict(fitModel, newdata=test1)
 confusionMat <- confusionMatrix(predictions_RF, test1$classe)
 confusionMat
+
 ######### 99.77% is the number of accuracy which totally validates the hypothesis made to eliminate most variables and use only 9 relatively independent covariates.##########
 
 ###########################  Estimation of the out-of-sample error rate ######################
