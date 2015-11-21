@@ -18,9 +18,9 @@ training <- training[, 7:160]
 testing  <- testing[, 7:160]
 
 ###  removing all columns that are mostly NA:
-is_data  <- apply(!is.na(training), 2, sum) > 19621  
-training <- training[, is_data]
-testing  <- testing[, is_data]
+NotNA  <- apply(!is.na(training), 2, sum) > 19621  
+training <- training[, NotNA]
+testing  <- testing[, NotNA]
 dim(training); dim(testing)
 
 ## training purposes (actual model building), while the 40% remainder will be used only for testing, evaluation and accuracy measurement##
@@ -41,11 +41,11 @@ test1  <- training[-inTrain,]
 dim(train1); dim(test1)
 
 
-## identify the "zero covariates" from train1 and then remove these "zero covariates" from both train1 and train2##
-nzv_cols <- nearZeroVar(train1)
-if(length(nzv_cols) > 0) {
-  train1 <- train1[, -nzv_cols]
-  test1 <- test1[, -nzv_cols]
+## identify the "zero covariates" from train1 and then remove these "zero covariates" from both train1 and test1##
+nzero_co <- nearZeroVar(train1)
+if(length(nzero_co) > 0) {
+  train1 <- train1[, -nzero_co]
+  test1 <- test1[, -nzero_co]
 }
 dim(train1); dim(test1)
 
@@ -63,9 +63,9 @@ varImpPlot(fitModel)
 
 ##### Using the Accuracy and Gini graphs above, I selected the top 10 variables that I'll use for model building. If the accuracy of the resulting model is acceptable, limiting the number of variables is a good idea to ensure readability and interpretability of the model. A model with 10 parameters is certainly much more user friendly than a model with 53 parameters.################
 
-correl = cor(train1[,c("yaw_belt","roll_belt","num_window","pitch_belt","magnet_dumbbell_z","magnet_dumbbell_y","pitch_forearm","accel_dumbbell_y","roll_arm","roll_forearm")])
-diag(correl) <- 0
-which(abs(correl)>0.75, arr.ind=TRUE)
+corr = cor(train1[,c("yaw_belt","roll_belt","num_window","pitch_belt","magnet_dumbbell_z","magnet_dumbbell_y","pitch_forearm","accel_dumbbell_y","roll_arm","roll_forearm")])
+diag(corr) <- 0
+which(abs(corr)>0.75, arr.ind=TRUE)
 
 ### By calculation the correlation matrix for these 10 variables and replace the 1s in the diagonal with 0s, and outputs which variables have an absolute value correlation above 75% , we may have problem with roll_belt and yaw_belt which have a high correlation (above 75%) with each other ###
 
@@ -106,31 +106,33 @@ fitModel <- readRDS("modelRF.Rds")
 
 ## the accuracy of this model##############
 
-predictions <- predict(fitModel, newdata=test1)
-confusionMat <- confusionMatrix(predictions, test1$classe)
+predictions_RF <- predict(fitModel, newdata=test1)
+confusionMat <- confusionMatrix(predictions_RF, test1$classe)
 confusionMat
 ######### 99.77% is the number of accuracy which totally validates the hypothesis made to eliminate most variables and use only 9 relatively independent covariates.##########
 
 ###########################  Estimation of the out-of-sample error rate ######################
 
-### The train2 test set was removed and left untouched during variable selection, training and optimizing of the Random Forest algorithm. Therefore this testing subset gives an unbiased estimate of the Random Forest algorithm's prediction accuracy (99.77% as calculated above). The Random Forest's out-of-sample error rate is derived by the formula 100% - Accuracy = 0.23%, or can be calculated directly by the following lines of code:### 
+### The test1 test set was removed and left untouched during variable selection, training and optimizing of the Random Forest algorithm. 
+##Therefore this testing subset gives an unbiased estimate of the Random Forest algorithm's prediction accuracy (99.77% as calculated above).
+##The Random Forest's out-of-sample error rate is derived by the formula 100% - Accuracy = 0.23%, or can be calculated directly by the following lines of code:### 
 
 missClass = function(values, predicted) {
   sum(predicted != values) / length(values)
 }
-OOS_errRate = missClass(test1$classe, predictions)
+OOS_errRate = missClass(test1$classe, predictions_RF)
 OOS_errRate
 
 ## [1] 0.002294163  The out-of-sample error rate is 0.22%.###################
 
 ###############  predict the classification of the 20 observations of the testing data set ###############
 
-predictions <- predict(fitModel, newdata=testing)
-testing$classe <- predictions
+predictions_RF <- predict(fitModel, newdata=testing)
+testing$classe <- predictions_RF
 
 #### Create one .CSV file with all the results, presented in two columns (named problem_id and classe) and 20 rows of data#####
 
-submit <- data.frame(problem_id = testing$problem_id, classe = predictions)
+submit <- data.frame(problem_id = testing$problem_id, classe = predictions_RF)
 write.csv(submit, file = "coursera-submission.csv", row.names = FALSE)
 
 ##### Create twenty .TXT file that we will upload one by one in the Coursera website (the 20 files created are called problem_1.txt to problem_20.txt)##########
